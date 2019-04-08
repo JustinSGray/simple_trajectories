@@ -1,7 +1,7 @@
 from sympy import *
 
 
-inputs = 'x y vx vy heading g isp speed mass CD'
+inputs = 'x0 x1 y0 y1'
 
 # ----------------
 outputs = {}
@@ -10,7 +10,7 @@ exec('%s = symbols("%s")' % (inputs_unpacked, inputs))
 exec('input_symbs = [%s]' % inputs_unpacked)
 # -----------------
 
-outputs['mass_dot'] = speed / (isp * mass)
+outputs['dist'] = sqrt((x0 - x1)**2 + (y0 - y1)**2)
 
 
 # ------------------
