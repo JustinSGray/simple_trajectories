@@ -1,7 +1,7 @@
 from sympy import *
 
 
-inputs = 'x y vx vy heading g isp thrust mass CD'
+inputs = 'x y vx vy heading g isp speed mass CD'
 
 # ----------------
 outputs = {}
@@ -10,7 +10,7 @@ exec('%s = symbols("%s")' % (inputs_unpacked, inputs))
 exec('input_symbs = [%s]' % inputs_unpacked)
 # -----------------
 
-outputs['mass_dot'] = -sqrt(thrust**2)/( g * isp)
+outputs['mass_dot'] = speed / (isp * mass)
 
 
 # ------------------

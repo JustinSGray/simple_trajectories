@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import cos, sin
+from numpy import cos, sin, sign
 from openmdao.api import ExplicitComponent
 
 g = 9.80665
@@ -27,20 +27,10 @@ class PlanePath2D(ExplicitComponent):
                        desc='aircraft position y',
                        units='m')
 
-        self.add_input(name='vx',
-                       val=np.ones(nn),
-                       desc='aircraft velocity magnitude x',
-                       units='m/s')
-
-        self.add_input(name='vy',
-                       val=np.ones(nn),
-                       desc='aircraft velocity magnitude y',
-                       units='m/s')
-
-        self.add_input(name='thrust',
+        self.add_input(name='speed',
                        val=np.zeros(nn),
                        desc='Thrust',
-                       units='N')
+                       units='m/s')
 
         self.add_input(name='mass',
                        val=np.ones(nn),
@@ -59,16 +49,6 @@ class PlanePath2D(ExplicitComponent):
                         desc='crossrange (latitude) velocity',
                         units='m/s')
 
-        self.add_output(name='vx_dot',
-                        val=np.zeros(nn),
-                        desc='accl',
-                        units='m/s**2')
-
-        self.add_output(name='vy_dot',
-                        val=np.zeros(nn),
-                        desc='accl',
-                        units='m/s**2')
-
         self.add_output(name='mass_dot',
                         val=np.zeros(nn),
                         desc='mass rate',
@@ -80,63 +60,42 @@ class PlanePath2D(ExplicitComponent):
 
         ar = np.arange(nn)
 
-        self.declare_partials('x_dot', 'vx', rows=ar, cols=ar)
-        self.declare_partials('y_dot', 'vy', rows=ar, cols=ar)
+        self.declare_partials('x_dot', 'speed', rows=ar, cols=ar)
+        self.declare_partials('x_dot', 'heading')
 
-        self.declare_partials('mass_dot', 'thrust', rows=ar, cols=ar)
+        self.declare_partials('y_dot', 'speed', rows=ar, cols=ar)
+        self.declare_partials('y_dot', 'heading')
 
-        self.declare_partials('vx_dot', ['thrust', 'mass'], rows=ar, cols=ar)
-        self.declare_partials('vx_dot', 'heading')
-        self.declare_partials('vy_dot', ['thrust', 'mass'], rows=ar, cols=ar)
-        self.declare_partials('vy_dot', 'heading')
+        #self.declare_partials('mass_dot', 'thrust', rows=ar, cols=ar)
 
-        self.declare_partials('impulse_dot', 'thrust', rows=ar, cols=ar)
+        self.declare_partials('impulse_dot', ['speed', 'mass'], rows=ar, cols=ar)
 
     def compute(self, inputs, outputs):
         heading = inputs['heading']
         isp = inputs['isp']
-        vx = inputs['vx']
-        vy = inputs['vy']
-        thrust = inputs['thrust']
+        speed = inputs['speed']
         mass = inputs['mass']
 
-        outputs['x_dot'] = vx
-        outputs['y_dot'] = vy
+        outputs['x_dot'] = np.cos(heading) * speed
+        outputs['y_dot'] = np.sin(heading) * speed
 
-        outputs['mass_dot'] = -np.abs(thrust)/( g * isp)
-
-        mass = np.clip(mass, 1e-8, None)
-
-        outputs['vx_dot'] = (thrust) * cos(heading) / mass
-        outputs['vy_dot'] = (thrust) * sin(heading) / mass
-
-        outputs['impulse_dot'] = thrust * np.sign(thrust) * mass
+        outputs['impulse_dot'] = speed * np.sign(speed) * mass
 
 
     def compute_partials(self, inputs, partials):
         heading = inputs['heading']
         isp = inputs['isp']
-        vx = inputs['vx']
-        vy = inputs['vy']
-        thrust = inputs['thrust']
+        speed = inputs['speed']
         mass = inputs['mass']
-        mass = np.clip(mass, 1e-8, None)
 
-        partials['x_dot', 'vx'] = 1.0
+        partials['x_dot', 'heading'] = -speed*sin(heading)
+        partials['x_dot', 'speed'] = cos(heading)
 
-        partials['y_dot', 'vy'] = 1.0
+        partials['y_dot', 'heading'] = speed*cos(heading)
+        partials['y_dot', 'speed'] = sin(heading)
 
-        partials['impulse_dot', 'thrust'] = 1.0
-
-        partials['mass_dot', 'thrust'] = -1/(g*isp) * np.sign(thrust)
-
-        partials['vx_dot', 'heading'] = -thrust*sin(heading)/mass
-        partials['vx_dot', 'thrust'] = cos(heading)/mass
-        partials['vx_dot', 'mass'] = -thrust*cos(heading)/mass**2
-
-        partials['vy_dot', 'heading'] = thrust*cos(heading)/mass
-        partials['vy_dot', 'thrust'] = sin(heading)/mass
-        partials['vy_dot', 'mass'] = -thrust*sin(heading)/mass**2
+        partials['impulse_dot', 'speed'] = mass*sign(speed)
+        partials['impulse_dot', 'mass'] = speed*sign(speed)
 
 
 
@@ -153,9 +112,7 @@ if __name__ == '__main__':
     p['heading'] = 0.5
     p['x'] = np.random.uniform(0, 100, n)
     p['y'] = np.random.uniform(0, 200, n)
-    p['vx'] = np.random.uniform(0, 1, n)
-    p['vy'] = np.random.uniform(0, 1, n)
-    p['thrust'] = np.random.uniform(0, 1, n)
+    p['speed'] = np.random.uniform(0, 1, n)
     p['mass'] = np.random.uniform(0, 1, n)
 
     p.run_model()
