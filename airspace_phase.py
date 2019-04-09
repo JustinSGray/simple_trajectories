@@ -49,10 +49,12 @@ class PlaneODE2D(Group):
     def initialize(self):   
         self.options.declare('num_nodes', types=int)
         self.options.declare('r_space', types=float, default=r_space)
+        self.options.declare('ignored_pairs', types=list, default=[])
 
     def setup(self):
         nn = self.options['num_nodes']
         r_space = self.options['r_space']
+        pairs = self.options['ignored_pairs']
 
         self.add_subsystem('t_imp', SumComp(num_nodes=nn, num_arrays=n_traj))
 
@@ -63,7 +65,9 @@ class PlaneODE2D(Group):
             self.add_subsystem(name='space%d' % i,
                            subsys=Space(num_nodes=nn, r_space=r_space))
 
-        self.add_subsystem(name='pairwise', subsys=Pairwise(n_traj = n_traj, num_nodes = nn))
+        self.add_subsystem(name='pairwise', subsys=Pairwise(n_traj = n_traj,
+                                                            ignored_pairs=pairs, 
+                                                            num_nodes = nn))
 
 
 

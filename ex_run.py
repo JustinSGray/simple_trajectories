@@ -23,19 +23,7 @@ p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-3
 p.driver.opt_settings['Major optimality tolerance'] = 4.0E-1
 p.driver.opt_settings['iSumm'] = 6
 
-
-phase = Phase(transcription=GaussLobatto(num_segments=20, order=3),
-              ode_class=PlaneODE2D)
-
-p.model.add_subsystem('phase0', phase)
-
-max_time = 500.0
-start_mass = 25.0
-
-phase.set_time_options(initial_bounds=(0, 0), duration_bounds=(10, max_time))
-
 locs = []
-
 for i in range(n_traj):
     theta = np.random.uniform(0, 2*np.pi)
     heading = theta + np.pi*np.random.uniform(0.5, 1.5)
@@ -45,7 +33,35 @@ for i in range(n_traj):
     end_x = r_space*np.cos(heading)
     end_y = r_space*np.sin(heading)
 
-    locs.append([theta, heading, start_x, start_y])
+    locs.append([theta, heading, start_x, start_y, end_x, end_y])
+
+ignored_pairs = []
+for i, j in combinations(range(n_traj), 2):
+    theta, heading, start_x, start_y, end_x, end_y = locs[i]
+    line1 = [start_x, start_y, end_x, end_y]
+
+    theta, heading, start_x, start_y, end_x, end_y = locs[j]
+    line2 = [start_x, start_y, end_x, end_y]
+
+    crosses, pt = intersect(line1, line2, r_space)
+    if not crosses:
+        ignored_pairs.append((i, j))
+
+
+phase = Phase(transcription=GaussLobatto(num_segments=20, order=3),
+              ode_class=PlaneODE2D, ode_init_kwargs={'ignored_pairs' : ignored_pairs})
+
+p.model.add_subsystem('phase0', phase)
+
+max_time = 500.0
+start_mass = 25.0
+
+phase.set_time_options(initial_bounds=(0, 0), duration_bounds=(10, max_time))
+
+
+for i in range(n_traj):
+
+    theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
     phase.set_state_options('p%dx' % i,
                             scaler=0.01, defect_scaler=0.1, fix_initial=True, 
@@ -59,24 +75,18 @@ for i in range(n_traj):
     phase.set_state_options('p%dimpulse' % i,
                             scaler=0.01, defect_scaler=0.1, fix_initial=True)
 
-    # phase.add_control('p%dspeed' % i, rate_continuity=False, units='m/s', 
-    #                   opt=True, upper=2, lower=-2, scaler=1.0)
-
-    # phase.add_path_constraint('p%dmass' % i, 
-    #                           constraint_name='mass_positive%d' % i, lower=1.0)
-
     # phase.add_boundary_constraint('space%d.err_space_dist' % i, 
     #                               constraint_name='space%d_err_space_dist' % i, 
     #                               loc='final', equals=0.0)
 
-    phase.add_design_parameter('speed%d' % i, opt=True, val=1.0, upper=20, lower=1e-9, units='m/s')
+    phase.add_design_parameter('speed%d' % i, opt=True, val=1.0, upper=10, lower=1e-9, units='m/s')
     phase.add_design_parameter('heading%d' % i, opt=True, val=heading)
 
 
 phase.add_objective('t_imp.sum', loc='final', scaler=0.1)
 
-p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
-                          lower=10.0)
+# p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
+#                           lower=10.0)
 p.setup()
 
 
@@ -87,31 +97,13 @@ p['phase0.t_initial'] = 0.0
 p['phase0.t_duration'] = max_time/2.0
 
 for i in range(n_traj):
-    theta, heading, start_x, start_y = locs[i]
-    end_x = r_space*np.cos(heading)
-    end_y = r_space*np.sin(heading)
+    theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
     p['phase0.states:p%dx' % i] = phase.interpolate(ys=[start_x, end_x], nodes='state_input')
     p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y], nodes='state_input')
 
     p['phase0.states:p%dmass' % i] = phase.interpolate(ys=[start_mass, start_mass], nodes='state_input')
     #p['phase0.states:L%d' % i] = phase.interpolate(ys=[0, 0], nodes='state_input')
-
-
-for i, j in combinations(range(n_traj), 2):
-    theta, heading, start_x, start_y = locs[i]
-    end_x = r_space*np.cos(heading)
-    end_y = r_space*np.sin(heading)
-    line1 = [start_x, start_y, end_x, end_y]
-
-    theta, heading, start_x, start_y = locs[j]
-    end_x = r_space*np.cos(heading)
-    end_y = r_space*np.sin(heading)
-    line2 = [start_x, start_y, end_x, end_y]
-
-    crosses, pt = intersect(line1, line2, r_space)
-    if not crosses:
-        print("no crossing:", i, j)
 
 p.run_driver()
 
