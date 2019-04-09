@@ -19,7 +19,11 @@ def intersect(line1, line2, r_space):
 
     d = np.sqrt(x_i**2 + y_i**2)
 
-    if d < r_space:
+    if d < r_space and \
+       x_i >= min(line1[0], line1[2]) and x_i >= min(line2[0], line2[2] ) and \
+       x_i <= max(line1[0], line1[2]) and x_i <= max(line2[0], line2[2] ) and \
+       y_i >= min(line1[1], line1[3]) and y_i >= min(line2[1], line2[3] ) and \
+       y_i <= max(line1[1], line1[3]) and y_i <= max(line2[1], line2[3] ):
         return True, (x_i, y_i)
     else:
         return False, (x_i, y_i)
@@ -27,7 +31,7 @@ def intersect(line1, line2, r_space):
 if __name__ == '__main__':
     
     r_space = 1.0
-    num_lines = 10
+    num_lines = 5
 
     np.random.seed(10)
 
@@ -36,7 +40,8 @@ if __name__ == '__main__':
     for i in range(num_lines):
 
         theta = np.random.uniform(0, 2*np.pi)
-        xs, ys = np.cos(theta), np.sin(theta)
+        r = np.random.uniform(0.2, 1)
+        xs, ys = r*np.cos(theta), r*np.sin(theta)
         eps = np.random.uniform(-np.pi/4, np.pi/4)
         xe, ye = np.cos(np.pi+theta + eps), np.sin(np.pi+theta + eps)
         lines.append([xs, ys, xe, ye])

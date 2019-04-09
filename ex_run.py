@@ -4,6 +4,7 @@ from airspace_phase import PlaneODE2D, n_traj, r_space
 from openmdao.api import Problem, Group, pyOptSparseDriver, DirectSolver
 from dymos import Phase, GaussLobatto
 from itertools import combinations
+from crossing import intersect
 
 import pickle
 
@@ -58,8 +59,8 @@ for i in range(n_traj):
     phase.set_state_options('p%dimpulse' % i,
                             scaler=0.01, defect_scaler=0.1, fix_initial=True)
 
-    phase.add_control('p%dspeed' % i, rate_continuity=False, units='m/s', 
-                      opt=True, upper=2, lower=-2, scaler=1.0)
+    # phase.add_control('p%dspeed' % i, rate_continuity=False, units='m/s', 
+    #                   opt=True, upper=2, lower=-2, scaler=1.0)
 
     # phase.add_path_constraint('p%dmass' % i, 
     #                           constraint_name='mass_positive%d' % i, lower=1.0)
@@ -68,15 +69,16 @@ for i in range(n_traj):
     #                               constraint_name='space%d_err_space_dist' % i, 
     #                               loc='final', equals=0.0)
 
-
+    phase.add_design_parameter('speed%d' % i, opt=True, val=0.0, upper=10, lower=1e-9, units='m/s')
     phase.add_design_parameter('heading%d' % i, opt=True, val=heading)
 
 
-#phase.add_objective('time', loc='final')
 phase.add_objective('t_imp.sum', loc='final', scaler=0.1)
 
-
+p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
+                          lower=20.0)
 p.setup()
+
 
 phase = p.model.phase0
 
@@ -95,6 +97,22 @@ for i in range(n_traj):
     p['phase0.states:p%dmass' % i] = phase.interpolate(ys=[start_mass, start_mass], nodes='state_input')
     #p['phase0.states:L%d' % i] = phase.interpolate(ys=[0, 0], nodes='state_input')
 
+
+for i, j in combinations(range(n_traj), 2):
+    theta, heading, start_x, start_y = locs[i]
+    end_x = r_space*np.cos(heading)
+    end_y = r_space*np.sin(heading)
+    line1 = [start_x, start_y, end_x, end_y]
+
+    theta, heading, start_x, start_y = locs[j]
+    end_x = r_space*np.cos(heading)
+    end_y = r_space*np.sin(heading)
+    line2 = [start_x, start_y, end_x, end_y]
+
+    crosses, pt = intersect(line1, line2, r_space)
+    if not crosses:
+        print("no crossing:", i, j)
+
 p.run_driver()
 
 
@@ -111,7 +129,7 @@ data = {'t' : t}
 for i in range(n_traj):
     x = exp_out.get_val('phase0.timeseries.states:p%dx' % i)
     y = exp_out.get_val('phase0.timeseries.states:p%dy' % i)
-    speed = exp_out.get_val('phase0.timeseries.controls:p%dspeed' % i)
+    speed = exp_out.get_val('phase0.timeseries.design_parameters:speed%d' % i)
     mass = exp_out.get_val('phase0.timeseries.states:p%dmass' % i)
     imp = exp_out.get_val('phase0.timeseries.states:p%dimpulse' % i)
     heading = exp_out.get_val('phase0.timeseries.design_parameters:heading%d' % i)
@@ -131,21 +149,21 @@ plt.xlim(-r_space, r_space)
 plt.ylim(-r_space, r_space)
 
 
-plt.figure()
-plt.suptitle('speed')
-plt.subplot(311)
-for i in range(n_traj):
-    plt.plot(t, data[i]['speed'])
+# plt.figure()
+# plt.suptitle('speed')
+# plt.subplot(311)
+# for i in range(n_traj):
+#     plt.plot(t, data[i]['speed'])
 
-plt.subplot(312)
-plt.suptitle('mass')
-for i in range(n_traj):
-    plt.plot(t, data[i]['mass'])
+# plt.subplot(312)
+# plt.suptitle('mass')
+# for i in range(n_traj):
+#     plt.plot(t, data[i]['mass'])
 
-plt.subplot(313)
-plt.suptitle('impulse')
-for i in range(n_traj):
-    plt.plot(t, data[i]['imp'])
+# plt.subplot(313)
+# plt.suptitle('impulse')
+# for i in range(n_traj):
+#     plt.plot(t, data[i]['imp'])
 
 
 plt.show()

@@ -13,6 +13,7 @@ class PlanePath2D(ExplicitComponent):
         nn = self.options['num_nodes']
 
         self.add_input('heading', val=0.0)
+        self.add_input('speed', val=0.0)
         self.add_input('isp', val=10.0)
 
         # ---------------------------------------------------
@@ -26,11 +27,6 @@ class PlanePath2D(ExplicitComponent):
                        val=np.ones(nn),
                        desc='aircraft position y',
                        units='m')
-
-        self.add_input(name='speed',
-                       val=np.zeros(nn),
-                       desc='Thrust',
-                       units='m/s')
 
         self.add_input(name='mass',
                        val=np.ones(nn),
@@ -60,15 +56,14 @@ class PlanePath2D(ExplicitComponent):
 
         ar = np.arange(nn)
 
-        self.declare_partials('x_dot', 'speed', rows=ar, cols=ar)
-        self.declare_partials('x_dot', 'heading')
-
-        self.declare_partials('y_dot', 'speed', rows=ar, cols=ar)
-        self.declare_partials('y_dot', 'heading')
+        self.declare_partials('x_dot', ['heading', 'speed'])
+        self.declare_partials('y_dot', ['heading', 'speed'])
 
         #self.declare_partials('mass_dot', 'thrust', rows=ar, cols=ar)
 
-        self.declare_partials('impulse_dot', ['speed', 'mass'], rows=ar, cols=ar)
+        #self.declare_partials('impulse_dot', ['speed', 'mass'], rows=ar, cols=ar)
+
+        self.declare_partials('impulse_dot', 'speed')
 
     def compute(self, inputs, outputs):
         heading = inputs['heading']
@@ -95,7 +90,7 @@ class PlanePath2D(ExplicitComponent):
         partials['y_dot', 'speed'] = sin(heading)
 
         partials['impulse_dot', 'speed'] = mass*sign(speed)
-        partials['impulse_dot', 'mass'] = speed*sign(speed)
+        #partials['impulse_dot', 'mass'] = speed*sign(speed)
 
 
 
@@ -112,7 +107,7 @@ if __name__ == '__main__':
     p['heading'] = 0.5
     p['x'] = np.random.uniform(0, 100, n)
     p['y'] = np.random.uniform(0, 200, n)
-    p['speed'] = np.random.uniform(0, 1, n)
+    p['speed'] = np.random.uniform(0, 1)
     p['mass'] = np.random.uniform(0, 1, n)
 
     p.run_model()

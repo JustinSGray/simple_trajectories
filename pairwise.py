@@ -14,13 +14,14 @@ class Pairwise(ExplicitComponent):
         nn = self.options['num_nodes']
 
         self.n_pairs = n_traj * (n_traj - 1) // 2
-        print(self.n_pairs)
+
         self.i_map = {}
         k = 0
         for i, j in combinations(range(n_traj), 2):
             self.i_map[i, j] = k
             k += 1
-        print(self.i_map)
+
+        self.add_input(name='time', val=np.zeros(nn))
 
         for i in range(n_traj):
             self.add_input(name='x%d' % i, val=np.zeros(nn), units='m')
@@ -62,8 +63,6 @@ class Pairwise(ExplicitComponent):
 
             partials['dist', 'y%d' % i][k] = (y0 - y1)/dist
             partials['dist', 'y%d' % j][k] = -(y0 - y1)/dist
-
-        print(partials['dist', 'x1'])
 
 
 if __name__ == '__main__':
