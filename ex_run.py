@@ -69,14 +69,14 @@ for i in range(n_traj):
     #                               constraint_name='space%d_err_space_dist' % i, 
     #                               loc='final', equals=0.0)
 
-    phase.add_design_parameter('speed%d' % i, opt=True, val=0.0, upper=10, lower=1e-9, units='m/s')
+    phase.add_design_parameter('speed%d' % i, opt=True, val=1.0, upper=20, lower=1e-9, units='m/s')
     phase.add_design_parameter('heading%d' % i, opt=True, val=heading)
 
 
 phase.add_objective('t_imp.sum', loc='final', scaler=0.1)
 
 p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
-                          lower=20.0)
+                          lower=10.0)
 p.setup()
 
 

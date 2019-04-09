@@ -58,11 +58,11 @@ class Pairwise(ExplicitComponent):
 
             dist = np.sqrt((x0 - x1)**2 + (y0 - y1)**2)
 
-            partials['dist', 'x%d' % i][k] = (x0 - x1)/dist
-            partials['dist', 'x%d' % j][k] = -(x0 - x1)/dist
+            partials['dist', 'x%d' % i][k*nn:k*nn+nn,:] = np.diag((x0 - x1)/dist)
+            partials['dist', 'x%d' % j][k*nn:k*nn+nn,:] = np.diag(-(x0 - x1)/dist)
 
-            partials['dist', 'y%d' % i][k] = (y0 - y1)/dist
-            partials['dist', 'y%d' % j][k] = -(y0 - y1)/dist
+            partials['dist', 'y%d' % i][k*nn:k*nn+nn,:] = np.diag((y0 - y1)/dist)
+            partials['dist', 'y%d' % j][k*nn:k*nn+nn,:] = np.diag(-(y0 - y1)/dist)
 
 
 if __name__ == '__main__':
