@@ -8,7 +8,7 @@ from space import Space
 from sum_comp import SumComp
 from pairwise import Pairwise
 
-n_traj = 5
+n_traj = 15
 r_space = 100.0
 
 
@@ -37,7 +37,7 @@ class PlaneODE2D(Group):
 
         ode_options.declare_parameter(name='speed%d' % i, 
                                       targets='p%d.speed' % i, 
-                                      dynamic=False)
+                                      dynamic=True)
         ode_options.declare_parameter(name='heading%d' % i, 
                                       targets='p%d.heading' % i, 
                                       dynamic=False)

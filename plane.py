@@ -13,7 +13,7 @@ class PlanePath2D(ExplicitComponent):
         nn = self.options['num_nodes']
 
         self.add_input('heading', val=0.0, units='rad')
-        self.add_input('speed', val=0.0, units='m/s')
+        #self.add_input('speed', val=0.0, units='m/s')
         self.add_input('isp', val=10.0)
 
         # ---------------------------------------------------
@@ -32,6 +32,11 @@ class PlanePath2D(ExplicitComponent):
                        val=np.ones(nn),
                        desc='mass',
                        units='kg')
+
+        self.add_input(name='speed',
+                       val=np.ones(nn),
+                       desc='speed',
+                       units='m/s')
 
         # ------------------------------------------------------
 
@@ -56,14 +61,13 @@ class PlanePath2D(ExplicitComponent):
 
         ar = np.arange(nn)
 
-        self.declare_partials('x_dot', ['heading', 'speed'])
-        self.declare_partials('y_dot', ['heading', 'speed'])
+        self.declare_partials('x_dot', 'heading')
+        self.declare_partials('x_dot', 'speed', rows=ar, cols=ar)
 
-        #self.declare_partials('mass_dot', 'thrust', rows=ar, cols=ar)
+        self.declare_partials('y_dot', 'heading')
+        self.declare_partials('y_dot', 'speed', rows=ar, cols=ar)
 
-        #self.declare_partials('impulse_dot', ['speed', 'mass'], rows=ar, cols=ar)
-
-        self.declare_partials('impulse_dot', 'speed')
+        #self.declare_partials('impulse_dot', 'speed')
 
     def compute(self, inputs, outputs):
         heading = inputs['heading']
@@ -74,7 +78,7 @@ class PlanePath2D(ExplicitComponent):
         outputs['x_dot'] = np.cos(heading) * speed
         outputs['y_dot'] = np.sin(heading) * speed
 
-        outputs['impulse_dot'] = speed * np.sign(speed) * mass
+        #outputs['impulse_dot'] = speed * np.sign(speed) * mass
 
 
     def compute_partials(self, inputs, partials):
@@ -89,7 +93,7 @@ class PlanePath2D(ExplicitComponent):
         partials['y_dot', 'heading'] = speed*cos(heading)
         partials['y_dot', 'speed'] = sin(heading)
 
-        partials['impulse_dot', 'speed'] = mass*sign(speed)
+        #partials['impulse_dot', 'speed'] = mass*sign(speed)
         #partials['impulse_dot', 'mass'] = speed*sign(speed)
 
 

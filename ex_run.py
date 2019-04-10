@@ -20,7 +20,9 @@ p.driver.options['dynamic_simul_derivs'] = True
 #p.driver.set_simul_deriv_color('coloring.json')
 #p.driver.opt_settings['Start'] = 'Cold'
 p.driver.opt_settings["Major step limit"] = 2.0 #2.0
-p.driver.opt_settings['Major iterations limit'] = 1000
+p.driver.opt_settings['Major iterations limit'] = 1000000
+p.driver.opt_settings['Minor iterations limit'] = 1000000
+p.driver.opt_settings['Iterations limit'] = 1000000
 p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-8
 p.driver.opt_settings['Major optimality tolerance'] = 4.0E-3
 p.driver.opt_settings['iSumm'] = 6
@@ -71,23 +73,19 @@ for i in range(n_traj):
 
     phase.set_state_options('p%dx' % i,
                             scaler=0.1, defect_scaler=0.01, fix_initial=True, 
-                            fix_final=False)
+                            fix_final=False, units='m')
     phase.set_state_options('p%dy' % i,
                             scaler=0.1, defect_scaler=0.01, fix_initial=True, 
-                            fix_final=False)
-    # phase.set_state_options('p%dmass' % i,
-    #                         scaler=0.01, defect_scaler=0.1, fix_initial=True,
-    #                         lower=0.0)
-    # phase.set_state_options('p%dimpulse' % i,
-    #                         scaler=0.01, defect_scaler=0.1, fix_initial=True)
+                            fix_final=False, units='m')
 
     phase.add_boundary_constraint('space%d.err_space_dist' % i, 
                                   constraint_name='space%d_err_space_dist' % i, 
                                   loc='final', lower=0.0)
 
-    phase.add_design_parameter('speed%d' % i, opt=True, val=1.0, upper=20, 
-                               lower=1e-9, units='m/s')
-    
+
+    phase.add_control('speed%d' % i, rate_continuity=False, units='m/s', 
+                      opt=True, upper=20, lower=0.0, scaler=1.0)
+
     phase.add_design_parameter('heading%d' % i, opt=False, val=heading, 
                                units='rad')
 
@@ -132,7 +130,7 @@ data = {'t' : t}
 for i in range(n_traj):
     x = exp_out.get_val('phase0.timeseries.states:p%dx' % i)
     y = exp_out.get_val('phase0.timeseries.states:p%dy' % i)
-    speed = exp_out.get_val('phase0.timeseries.design_parameters:speed%d' % i)
+    speed = exp_out.get_val('phase0.timeseries.controls:speed%d' % i)
     #mass = exp_out.get_val('phase0.timeseries.states:p%dmass' % i)
     #imp = exp_out.get_val('phase0.timeseries.states:p%dimpulse' % i)
     heading = exp_out.get_val('phase0.timeseries.design_parameters:heading%d' % i)
