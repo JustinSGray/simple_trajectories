@@ -12,8 +12,8 @@ class PlanePath2D(ExplicitComponent):
     def setup(self):
         nn = self.options['num_nodes']
 
-        self.add_input('heading', val=0.0)
-        self.add_input('speed', val=0.0)
+        self.add_input('heading', val=0.0, units='rad')
+        self.add_input('speed', val=0.0, units='m/s')
         self.add_input('isp', val=10.0)
 
         # ---------------------------------------------------

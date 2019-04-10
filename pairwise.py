@@ -2,6 +2,7 @@ import numpy as np
 from itertools import combinations
 from openmdao.api import ExplicitComponent
 
+max_float = np.finfo(np.float128).max
 
 class Pairwise(ExplicitComponent):
 
@@ -35,7 +36,7 @@ class Pairwise(ExplicitComponent):
             self.add_input(name='y%d' % i, val=np.zeros(nn), units='m')
 
 
-        self.add_output(name='dist', val=np.zeros((self.n_pairs, nn)))
+        self.add_output(name='dist', val=20.0*np.ones((self.n_pairs, nn)))
 
         ar = np.arange(nn)
 

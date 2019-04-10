@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import ExplicitComponent, Group
+from openmdao.api import ExplicitComponent, Group, DirectSolver
 #from constraint_aggregator import ConstraintAggregator, VectorEndMux
 from plane import PlanePath2D
 from dymos import ODEOptions
@@ -30,10 +30,10 @@ class PlaneODE2D(Group):
                                   targets=['p%d.y' % i, 
                                            'pairwise.y%d' % i,
                                            'space%d.y' % i], units='m')
-        ode_options.declare_state(name='p%dmass' % i, rate_source='p%d.mass_dot' % i, 
-                                  targets=['p%d.mass' % i], units='kg')
-        ode_options.declare_state(name='p%dimpulse' % i, rate_source='p%d.impulse_dot' % i,
-                                   targets=['t_imp.a%d' % i])
+        # ode_options.declare_state(name='p%dmass' % i, rate_source='p%d.mass_dot' % i, 
+        #                           targets=['p%d.mass' % i], units='kg')
+        # ode_options.declare_state(name='p%dimpulse' % i, rate_source='p%d.impulse_dot' % i,
+        #                            targets=['t_imp.a%d' % i])
 
         ode_options.declare_parameter(name='speed%d' % i, 
                                       targets='p%d.speed' % i, 
@@ -55,7 +55,7 @@ class PlaneODE2D(Group):
         nn = self.options['num_nodes']
         r_space = self.options['r_space']
         pairs = self.options['ignored_pairs']
-
+        self.linear_solver = DirectSolver()
         self.add_subsystem('t_imp', SumComp(num_nodes=nn, num_arrays=n_traj))
 
         for i in range(n_traj):
