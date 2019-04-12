@@ -12,8 +12,8 @@ class Space(ExplicitComponent):
     def setup(self):
         num_nodes = self.options['num_nodes']
 
-        self.add_input(name='x', val=np.zeros(num_nodes))
-        self.add_input(name='y', val=np.zeros(num_nodes))
+        self.add_input(name='x', val=np.zeros(num_nodes), units='m')
+        self.add_input(name='y', val=np.zeros(num_nodes), units='m')
 
         self.add_output(name='err_space_dist', val=np.ones(num_nodes))
 

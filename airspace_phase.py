@@ -1,19 +1,19 @@
 import numpy as np
 
 from openmdao.api import ExplicitComponent, Group, DirectSolver
-#from constraint_aggregator import ConstraintAggregator, VectorEndMux
+from constraint_aggregator import ConstraintAggregator
 from plane import PlanePath2D
 from dymos import ODEOptions
 from space import Space
 from sum_comp import SumComp
 from pairwise import Pairwise
 
-n_traj = 15
+n_traj = 10
+n_pairs = n_traj * (n_traj - 1) // 2
 r_space = 100.0
+min_sep = 20.0
 
-
-agg = 'RePU'
-rho = 2.0
+agg = False
 
 class PlaneODE2D(Group):
     ode_options = ODEOptions()
@@ -67,7 +67,13 @@ class PlaneODE2D(Group):
 
         self.add_subsystem(name='pairwise', subsys=Pairwise(n_traj = n_traj,
                                                             ignored_pairs=pairs, 
-                                                            num_nodes = nn))
+                                                            num_nodes = nn,
+                                                            min_sep=min_sep))
 
+        if agg:
+            self.add_subsystem(name='agg', subsys=ConstraintAggregator(c_shape=(n_pairs, nn), 
+                                                                       rho=2.0,
+                                                                       aggregator='RePU'))
+            self.connect('pairwise.dist', 'agg.g')
 
 

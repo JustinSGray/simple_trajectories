@@ -9,12 +9,14 @@ class Pairwise(ExplicitComponent):
     def initialize(self):
         self.options.declare('n_traj', types=int)
         self.options.declare('num_nodes', types=int)
+        self.options.declare('min_sep', types=float)
         self.options.declare('ignored_pairs', types=list, default=[])
 
     def setup(self):
         n_traj = self.options['n_traj']
         nn = self.options['num_nodes']
         ignored = self.options['ignored_pairs']
+
 
         self.n_pairs = n_traj * (n_traj - 1) // 2
 
@@ -36,7 +38,7 @@ class Pairwise(ExplicitComponent):
             self.add_input(name='y%d' % i, val=np.zeros(nn), units='m')
 
 
-        self.add_output(name='dist', val=20.0*np.ones((self.n_pairs, nn)))
+        self.add_output(name='dist', val=np.zeros((self.n_pairs, nn)))
 
         ar = np.arange(nn)
 
@@ -53,6 +55,7 @@ class Pairwise(ExplicitComponent):
             self.declare_partials('dist', 'y%d' % i, rows=rows, cols=cols)
 
     def compute(self, inputs, outputs):
+        min_sep = self.options['min_sep']
         for i, j in self.i_map.keys():
             k = self.i_map[i, j]
 
@@ -61,7 +64,7 @@ class Pairwise(ExplicitComponent):
 
             dist = np.sqrt((x0 - x1)**2 + (y0 - y1)**2)
 
-            outputs['dist'][k] = dist
+            outputs['dist'][k] = min_sep - dist
 
     def compute_partials(self, inputs, partials):
         n_traj = self.options['n_traj']
@@ -76,11 +79,11 @@ class Pairwise(ExplicitComponent):
             dist = np.sqrt((x0 - x1)**2 + (y0 - y1)**2)
             ik = idx_set[i]
             jk = idx_set[j]
-            partials['dist', 'x%d' % i][nn*ik : nn*ik + nn] = (x0 - x1)/dist
-            partials['dist', 'x%d' % j][nn*jk : nn*jk + nn] = -(x0 - x1)/dist
+            partials['dist', 'x%d' % i][nn*ik : nn*ik + nn] = -(x0 - x1)/dist
+            partials['dist', 'x%d' % j][nn*jk : nn*jk + nn] = (x0 - x1)/dist
 
-            partials['dist', 'y%d' % i][nn*ik : nn*ik + nn] = (y0 - y1)/dist
-            partials['dist', 'y%d' % j][nn*jk : nn*jk + nn] = -(y0 - y1)/dist
+            partials['dist', 'y%d' % i][nn*ik : nn*ik + nn] = -(y0 - y1)/dist
+            partials['dist', 'y%d' % j][nn*jk : nn*jk + nn] = (y0 - y1)/dist
 
             idx_set[i] += 1
             idx_set[j] += 1
@@ -100,7 +103,8 @@ if __name__ == '__main__':
 
     p.model.add_subsystem('test', Pairwise(n_traj = nt, 
                                         num_nodes = n,
-                                        ignored_pairs=pairs), promotes=['*'])
+                                        ignored_pairs=pairs,
+                                        min_sep=1.0), promotes=['*'])
     p.setup()
     np.random.seed(0)
     for i in range(nt):

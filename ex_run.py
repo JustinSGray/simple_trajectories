@@ -1,6 +1,6 @@
 import numpy as np
 
-from airspace_phase import PlaneODE2D, n_traj, r_space
+from airspace_phase import PlaneODE2D, n_traj, r_space, min_sep, agg
 from openmdao.api import Problem, Group, pyOptSparseDriver, DirectSolver
 from dymos import Phase, GaussLobatto
 from itertools import combinations
@@ -23,7 +23,7 @@ p.driver.opt_settings["Major step limit"] = 2.0 #2.0
 p.driver.opt_settings['Major iterations limit'] = 1000000
 p.driver.opt_settings['Minor iterations limit'] = 1000000
 p.driver.opt_settings['Iterations limit'] = 1000000
-p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-8
+p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-5
 p.driver.opt_settings['Major optimality tolerance'] = 4.0E-3
 p.driver.opt_settings['iSumm'] = 6
 
@@ -92,8 +92,12 @@ for i in range(n_traj):
 
 phase.add_objective('time', loc='final', scaler=1.0)
 
-p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
-                          lower=20.0)
+if agg:
+    p.model.add_constraint('phase0.rhs_disc.agg.c', 
+                              upper=0.0, scaler=1e-3)
+else:
+    p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
+                              upper=0.0, scaler=1e-3)
 p.setup()
 
 
@@ -113,12 +117,13 @@ for i in range(n_traj):
 
     #p['phase0.states:p%dmass' % i] = phase.interpolate(ys=[start_mass, start_mass], nodes='state_input')
     #p['phase0.states:L%d' % i] = phase.interpolate(ys=[0, 0], nodes='state_input')
-
+import time
+t = time.time()
 p.run_driver()
 
 
 exp_out = phase.simulate()
-
+print("optimization time:", time.time() - t)
 
 import matplotlib.pyplot as plt
 circle = plt.Circle((0, 0), r_space, fill=False)
