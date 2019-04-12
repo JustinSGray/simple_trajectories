@@ -8,11 +8,11 @@ from crossing import intersect
 
 import pickle
 
-np.random.seed(3)
+np.random.seed(4)
 
 p = Problem(model=Group())
 
-coloring = True
+coloring = False
 
 p.driver = pyOptSparseDriver()
 p.driver.options['optimizer'] = 'SNOPT'
@@ -31,12 +31,14 @@ locs = []
 thetas = np.linspace(0, 2*np.pi, n_traj + 1)
 for i in range(n_traj):
     theta = thetas[i]
-    heading = theta + np.random.uniform(0.6*np.pi, 1.4*np.pi)
+    heading = theta + np.random.uniform(0.75*np.pi, 1.25*np.pi)
     start_x = r_space*np.cos(theta)
     start_y = r_space*np.sin(theta)
 
     end_x = r_space*np.cos(heading)
     end_y = r_space*np.sin(heading)
+
+    heading = np.arctan2(end_y - start_y, end_x - start_x)
 
     locs.append([theta, heading, start_x, start_y, end_x, end_y])
 
@@ -49,12 +51,13 @@ for i, j in combinations(range(n_traj), 2):
     line2 = [start_x, start_y, end_x, end_y]
 
     crosses, pt = intersect(line1, line2, r_space)
-    if not crosses:
+    if not crosses and coloring:
         ignored_pairs.append((i, j))
         print("ignoring pair:", (i,j))
 
 if not coloring:
     ignored_pairs = []
+
 phase = Phase(transcription=GaussLobatto(num_segments=20, order=3),
               ode_class=PlaneODE2D, 
               ode_init_kwargs={'ignored_pairs' : ignored_pairs})
@@ -83,8 +86,12 @@ for i in range(n_traj):
                                   loc='final', lower=0.0)
 
 
-    phase.add_control('speed%d' % i, rate_continuity=False, units='m/s', 
-                      opt=True, upper=20, lower=0.0, scaler=1.0)
+    # phase.add_control('speed%d' % i, rate_continuity=False, units='m/s', 
+    #                   opt=True, upper=20, lower=0.0, scaler=1.0)
+
+    phase.add_polynomial_control('speed%d' % i, order=2, units='m/s', opt=True,
+                             targets=['p%d.speed' % i], upper=20, lower=0.0, 
+                             scaler=1.0)
 
     phase.add_design_parameter('heading%d' % i, opt=False, val=heading, 
                                units='rad')
@@ -94,7 +101,7 @@ phase.add_objective('time', loc='final', scaler=1.0)
 
 if agg:
     p.model.add_constraint('phase0.rhs_disc.agg.c', 
-                              upper=0.0, scaler=1e-3)
+                              upper=0.0, scaler=100.0)
 else:
     p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
                               upper=0.0, scaler=1e-3)
@@ -135,17 +142,21 @@ data = {'t' : t}
 for i in range(n_traj):
     x = exp_out.get_val('phase0.timeseries.states:p%dx' % i)
     y = exp_out.get_val('phase0.timeseries.states:p%dy' % i)
-    speed = exp_out.get_val('phase0.timeseries.controls:speed%d' % i)
+    #speed = exp_out.get_val('phase0.timeseries.controls:speed%d' % i)
     #mass = exp_out.get_val('phase0.timeseries.states:p%dmass' % i)
     #imp = exp_out.get_val('phase0.timeseries.states:p%dimpulse' % i)
     heading = exp_out.get_val('phase0.timeseries.design_parameters:heading%d' % i)
     #L = exp_out.get_val('phase0.timeseries.states:L%d' % i)
     #print(np.sum(np.sqrt(x**2 + y**2)))
 
-    data[i] = {'x' : x, 'y' : y, 'speed' : speed, 
+    data[i] = {'x' : x, 'y' : y, 
                'heading' : heading, 'loc' : locs[i]}
-
+    theta, heading_, start_x, start_y, end_x, end_y = locs[i]
     idx = np.where(x**2 + y**2 <= r_space**2)
+
+    plt.plot(start_x, start_y, 'ro')
+    plt.plot(end_x, end_y, 'bo')
+
     plt.plot(x[idx], y[idx], 'gray')
     plt.scatter(x[idx], y[idx], cmap='Greens', c=t[idx])
 

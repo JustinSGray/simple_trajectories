@@ -4,7 +4,7 @@ from matplotlib import cm
 from itertools import combinations
 import os, shutil
 import pickle
-from airspace_phase import PlaneODE2D, n_traj, r_space
+from airspace_phase import PlaneODE2D, n_traj, r_space, min_sep
 
 scene = 'implicit'
 
@@ -28,7 +28,7 @@ for t in range(len(data['t']))[::-1]:
             continue
         circle = plt.Circle((0, 0), r_space, fill=False)
         plt.gca().add_artist(circle)
-        circle = plt.Circle((data[i]['x'][t], data[i]['y'][t]), 10/2, fill=False)
+        circle = plt.Circle((data[i]['x'][t], data[i]['y'][t]), min_sep/2, fill=False)
         ax.add_artist(circle)
 
         plt.title("t = %f" % data['t'][t])

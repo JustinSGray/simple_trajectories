@@ -63,7 +63,7 @@ class Pairwise(ExplicitComponent):
             y0, y1 = inputs['y%d' % i], inputs['y%d' % j]
 
             dist = np.sqrt((x0 - x1)**2 + (y0 - y1)**2)
-
+            #print(max(min_sep - dist))
             outputs['dist'][k] = min_sep - dist
 
     def compute_partials(self, inputs, partials):
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     p.model.add_subsystem('test', Pairwise(n_traj = nt, 
                                         num_nodes = n,
                                         ignored_pairs=pairs,
-                                        min_sep=1.0), promotes=['*'])
+                                        min_sep=12.4), promotes=['*'])
     p.setup()
     np.random.seed(0)
     for i in range(nt):

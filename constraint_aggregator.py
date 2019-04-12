@@ -20,7 +20,7 @@ class ConstraintAggregator(ExplicitComponent):
             self.reversed = True
         self.aggf = aggf[agg]
 
-        self.add_input(name='g', val=np.ones(shape))
+        self.add_input(name='g', val=np.zeros(shape))
         self.add_output(name='c', val=1.0)
 
         self.declare_partials('c', 'g')
@@ -33,7 +33,10 @@ class ConstraintAggregator(ExplicitComponent):
         scale = 1.0
         if self.reversed:
             scale = -1.0
+        #print()
+        #print("g:", g.min(), g.max(), g.sum())
         k, dk = self.aggf(scale*g.flatten(), rho)
+        #print("c:", k.min(), k.max(), k.sum())
 
         outputs['c'] = np.sum(scale*k)
         self.dk = dk.reshape(shape)

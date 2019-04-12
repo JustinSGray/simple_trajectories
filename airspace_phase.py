@@ -10,10 +10,10 @@ from pairwise import Pairwise
 
 n_traj = 10
 n_pairs = n_traj * (n_traj - 1) // 2
-r_space = 100.0
-min_sep = 20.0
+r_space = 1000.0
+min_sep = 50.0
 
-agg = False
+agg = True
 
 class PlaneODE2D(Group):
     ode_options = ODEOptions()
@@ -35,9 +35,9 @@ class PlaneODE2D(Group):
         # ode_options.declare_state(name='p%dimpulse' % i, rate_source='p%d.impulse_dot' % i,
         #                            targets=['t_imp.a%d' % i])
 
-        ode_options.declare_parameter(name='speed%d' % i, 
-                                      targets='p%d.speed' % i, 
-                                      dynamic=True)
+        # ode_options.declare_parameter(name='speed%d' % i, 
+        #                               targets='p%d.speed' % i, 
+        #                               dynamic=True)
         ode_options.declare_parameter(name='heading%d' % i, 
                                       targets='p%d.heading' % i, 
                                       dynamic=False)
