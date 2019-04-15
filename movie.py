@@ -24,26 +24,33 @@ for t in range(len(data['t']))[::-1]:
     fig = plt.figure()
     ax = plt.gca()
     for i in range(n_traj):
-        if data[i]['x'][t]**2 + data[i]['y'][t]**2 > r_space**2:
-            continue
+        x, y = data[i]['x'][t], data[i]['y'][t]
+        theta, heading, start_x, start_y, end_x, end_y = data[i]['loc']
+        if x**2 + y**2 > r_space**2:
+            x, y = end_x, end_y
         circle = plt.Circle((0, 0), r_space, fill=False)
         plt.gca().add_artist(circle)
-        circle = plt.Circle((data[i]['x'][t], data[i]['y'][t]), min_sep/2, fill=False)
+        circle = plt.Circle((x, y), min_sep/2.3, fill=False)
         ax.add_artist(circle)
 
         plt.title("t = %f" % data['t'][t])
         c =  data['t'][0:t+1]
         s = np.linspace(0.1,1.0, len(c))
-        plt.scatter(data[i]['x'][t], data[i]['y'][t], marker='^', cmap='Greens')
+        plt.scatter(x, y, marker='^', cmap='Greens')
 
-        plt.plot(data[i]['x'][:t], data[i]['y'][:t], 'k', linewidth=0.1)
 
-        theta, heading, start_x, start_y, end_x, end_y = data[i]['loc']
+        xx = np.linspace(start_x, x, 10)
+        yy = np.linspace(start_y, y, 10)
+        plt.plot(xx, yy, 'k', linewidth=0.1)
+
+        #plt.plot(data[i]['x'][:t], data[i]['y'][:t], 'k', linewidth=0.1)
+
+        
         #plt.plot([start_x], [start_y], 's', markersize=6)
         #plt.xlabel('x')
         #plt.ylabel('y')
-    #plt.tight_layout(pad=1)
-    #plt.axis('equal')
+    plt.tight_layout(pad=1)
+    plt.axis('equal')
     plt.xlim(-r_space,r_space)
     plt.ylim(-r_space,r_space)
     fig.savefig('frames_%s/%03d.png' % (scene, t), dpi=fig.dpi)
