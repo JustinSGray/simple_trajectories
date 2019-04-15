@@ -8,7 +8,10 @@ from space import Space
 from sum_comp import SumComp
 from pairwise import Pairwise
 
-n_traj = 10
+n_traj = 25
+# 10: 20 seconds
+# 25: 4.5 minutes
+# 50: 70 minutes
 n_pairs = n_traj * (n_traj - 1) // 2
 r_space = 100.0
 min_sep = 5.0
@@ -56,24 +59,29 @@ class PlaneODE2D(Group):
         r_space = self.options['r_space']
         pairs = self.options['ignored_pairs']
         self.linear_solver = DirectSolver()
-        self.add_subsystem('t_imp', SumComp(num_nodes=nn, num_arrays=n_traj))
+        self.add_subsystem('t_imp', SumComp(num_nodes=nn, 
+                                            num_arrays=n_traj))
 
         for i in range(n_traj):
             self.add_subsystem(name='p%d' % i,
-                           subsys=PlanePath2D(num_nodes=nn))
+                               subsys=PlanePath2D(num_nodes=nn))
 
             self.add_subsystem(name='space%d' % i,
-                           subsys=Space(num_nodes=nn, r_space=r_space))
+                               subsys=Space(num_nodes=nn, 
+                                            r_space=r_space))
 
-        self.add_subsystem(name='pairwise', subsys=Pairwise(n_traj = n_traj,
-                                                            ignored_pairs=pairs, 
-                                                            num_nodes = nn,
-                                                            min_sep=1.5*min_sep))
+        self.add_subsystem(name='pairwise', 
+                           subsys=Pairwise(n_traj = n_traj,
+                                           ignored_pairs=pairs, 
+                                           num_nodes = nn,
+                                           min_sep=1.5*min_sep))
 
         if agg:
-            self.add_subsystem(name='agg', subsys=ConstraintAggregator(c_shape=(n_pairs, nn), 
-                                                                       rho=50.0,
-                                                                       aggregator='KS'))
+            self.add_subsystem(name='agg', 
+                               subsys=ConstraintAggregator(
+                                                         c_shape=(n_pairs, nn), 
+                                                         rho=50.0,
+                                                         aggregator='KS'))
             self.connect('pairwise.dist', 'agg.g')
 
 
