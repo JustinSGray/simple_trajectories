@@ -67,7 +67,7 @@ class PlanePath2D(ExplicitComponent):
         self.declare_partials('y_dot', 'heading')
         self.declare_partials('y_dot', 'speed', rows=ar, cols=ar)
 
-        #self.declare_partials('impulse_dot', 'speed')
+        self.declare_partials('impulse_dot', 'speed')
 
     def compute(self, inputs, outputs):
         heading = inputs['heading']
@@ -78,7 +78,7 @@ class PlanePath2D(ExplicitComponent):
         outputs['x_dot'] = np.cos(heading) * speed
         outputs['y_dot'] = np.sin(heading) * speed
 
-        #outputs['impulse_dot'] = speed * np.sign(speed) * mass
+        outputs['impulse_dot'] = speed * np.sign(speed) * mass
 
 
     def compute_partials(self, inputs, partials):

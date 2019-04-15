@@ -48,7 +48,7 @@ for t in range(len(data['t']))[::-1]:
     plt.ylim(-r_space,r_space)
     fig.savefig('frames_%s/%03d.png' % (scene, t), dpi=fig.dpi)
 
-cmd = "ffmpeg -y -r 25 -i frames_%s/%%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p out_%s.mp4; open out_%s.mp4" % (scene, scene, scene)
+cmd = "ffmpeg -y -r 50 -i frames_%s/%%03d.png -c:v libx264 -vf fps=50 -pix_fmt yuv420p out_%s.mp4; open out_%s.mp4" % (scene, scene, scene)
 os.system(cmd)
 
 #plt.show()

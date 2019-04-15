@@ -8,11 +8,11 @@ from crossing import intersect
 
 import pickle
 
-np.random.seed(4)
+np.random.seed(3)
 
 p = Problem(model=Group())
 
-coloring = False
+coloring = True
 
 p.driver = pyOptSparseDriver()
 p.driver.options['optimizer'] = 'SNOPT'
@@ -23,7 +23,7 @@ p.driver.opt_settings["Major step limit"] = 2.0 #2.0
 p.driver.opt_settings['Major iterations limit'] = 1000000
 p.driver.opt_settings['Minor iterations limit'] = 1000000
 p.driver.opt_settings['Iterations limit'] = 1000000
-p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-5
+p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-8
 p.driver.opt_settings['Major optimality tolerance'] = 4.0E-3
 p.driver.opt_settings['iSumm'] = 6
 
@@ -31,7 +31,7 @@ locs = []
 thetas = np.linspace(0, 2*np.pi, n_traj + 1)
 for i in range(n_traj):
     theta = thetas[i]
-    heading = theta + np.random.uniform(0.75*np.pi, 1.25*np.pi)
+    heading = theta + np.random.uniform(0.3*np.pi, 1.7*np.pi)
     start_x = r_space*np.cos(theta)
     start_y = r_space*np.sin(theta)
 
@@ -58,7 +58,7 @@ for i, j in combinations(range(n_traj), 2):
 if not coloring:
     ignored_pairs = []
 
-phase = Phase(transcription=GaussLobatto(num_segments=20, order=3),
+phase = Phase(transcription=GaussLobatto(num_segments=25, order=3),
               ode_class=PlaneODE2D, 
               ode_init_kwargs={'ignored_pairs' : ignored_pairs})
 
@@ -98,10 +98,11 @@ for i in range(n_traj):
 
 
 phase.add_objective('time', loc='final', scaler=1.0)
+#phase.add_objective('t_imp.', loc='final', scaler=1.0)
 
 if agg:
     p.model.add_constraint('phase0.rhs_disc.agg.c', 
-                              upper=0.0, scaler=100.0)
+                              upper=0.0, scaler=1.0)
 else:
     p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
                               upper=0.0, scaler=1e-3)
@@ -128,7 +129,6 @@ import time
 t = time.time()
 p.run_driver()
 
-
 exp_out = phase.simulate()
 print("optimization time:", time.time() - t)
 
@@ -148,6 +148,22 @@ for i in range(n_traj):
     heading = exp_out.get_val('phase0.timeseries.design_parameters:heading%d' % i)
     #L = exp_out.get_val('phase0.timeseries.states:L%d' % i)
     #print(np.sum(np.sqrt(x**2 + y**2)))
+
+    xi, yi = p['phase0.states:p%dx' % i], p['phase0.states:p%dy' % i]
+
+
+    for k in data.keys():
+        if k == 't':
+            continue
+        x2, y2 = data[k]['x'], data[k]['y']
+        dist = np.sqrt((x - x2)**2 + (y - y2)**2)
+        if dist.min() < min_sep:
+            print("!! dist exp check", i, k, dist.min())
+
+        xi2, yi2 =  p['phase0.states:p%dx' % k], p['phase0.states:p%dy' % k]
+        dist = np.sqrt((xi - xi2)**2 + (yi - yi2)**2)
+        if dist.min() < min_sep:
+            print("!! dist impl. check", i, k, dist.min())
 
     data[i] = {'x' : x, 'y' : y, 
                'heading' : heading, 'loc' : locs[i]}
