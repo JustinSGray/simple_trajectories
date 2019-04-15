@@ -134,6 +134,15 @@ p.run_driver()
 exp_out = phase.simulate()
 print("optimization time:", time.time() - t)
 
+n = 25
+t = time.time()
+for i in range(n):
+    p.compute_totals()
+print("deriv time:", (time.time() - t)/n)
+
+quit()
+
+
 import matplotlib.pyplot as plt
 circle = plt.Circle((0, 0), r_space, fill=False)
 plt.gca().add_artist(circle)
