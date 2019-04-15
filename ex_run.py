@@ -9,7 +9,9 @@ from crossing import intersect
 import pickle
 
 np.random.seed(3)
+# seed = 3, nn = 10, segments=25
 
+#19, 15, 28
 p = Problem(model=Group())
 
 coloring = True

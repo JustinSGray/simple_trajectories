@@ -72,8 +72,8 @@ class PlaneODE2D(Group):
 
         if agg:
             self.add_subsystem(name='agg', subsys=ConstraintAggregator(c_shape=(n_pairs, nn), 
-                                                                       rho=2.0,
-                                                                       aggregator='RePU'))
+                                                                       rho=50.0,
+                                                                       aggregator='KS'))
             self.connect('pairwise.dist', 'agg.g')
 
 
