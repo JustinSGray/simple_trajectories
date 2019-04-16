@@ -142,7 +142,7 @@ def make_benchmark(n_traj):
         print("starting run_driver()")
         t = time.time()
         p.run_driver()
-        ct = p.driver.coloring_elapsed
+        ct = p.driver._total_coloring._coloring_time
         col_time.append(ct)
 
         ot = time.time() - t - ct
@@ -160,6 +160,11 @@ def make_benchmark(n_traj):
 
     return col_time, opt_time, deriv_time, opt_success, major_it
 
+
+if __name__ == '__main__':
+    
+    n = 20
+    make_benchmark(n)
 
 
 
