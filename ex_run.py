@@ -1,6 +1,6 @@
 import numpy as np
 
-from airspace_phase import PlaneODE2D, n_traj, r_space, min_sep, agg
+from airspace_phase import make_ODE
 from openmdao.api import Problem, Group, pyOptSparseDriver, DirectSolver
 from dymos import Phase, GaussLobatto
 from itertools import combinations
@@ -8,17 +8,28 @@ from crossing import intersect
 
 import pickle
 
-np.random.seed(3)
+np.random.seed(30)
 # seed = 3, nn = 10, segments=25
 
-#19, 15, 28
+# seed = 30, nn = 20, segments = 25
+#       drop i = 13
+
+n_traj = 20
+n_pairs = n_traj * (n_traj - 1) // 2
+r_space = 100.0
+min_sep = 5.0
+
+agg = False
+
+PlaneODE2D = make_ODE(n_traj, r_space, min_sep, agg)
+
 p = Problem(model=Group())
 
 coloring = True
 
 p.driver = pyOptSparseDriver()
 p.driver.options['optimizer'] = 'SNOPT'
-p.driver.options['dynamic_simul_derivs'] = True
+p.driver.options['dynamic_total_coloring'] = True
 #p.driver.set_simul_deriv_color('coloring.json')
 #p.driver.opt_settings['Start'] = 'Cold'
 p.driver.opt_settings["Major step limit"] = 2.0 #2.0
@@ -65,6 +76,8 @@ phase = Phase(transcription=GaussLobatto(num_segments=25, order=3),
               ode_init_kwargs={'ignored_pairs' : ignored_pairs})
 
 p.model.add_subsystem('phase0', phase)
+p.model.linear_solver = DirectSolver()
+
 
 max_time = 500.0
 start_mass = 25.0
@@ -140,7 +153,7 @@ for i in range(n):
     p.compute_totals()
 print("deriv time:", (time.time() - t)/n)
 
-quit()
+
 
 
 import matplotlib.pyplot as plt
