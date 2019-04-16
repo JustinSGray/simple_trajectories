@@ -19,7 +19,7 @@ n_pairs = n_traj * (n_traj - 1) // 2
 r_space = 100.0
 min_sep = 5.0
 
-agg = False
+agg = True
 
 PlaneODE2D = make_ODE(n_traj, r_space, min_sep, agg)
 

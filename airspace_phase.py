@@ -75,7 +75,7 @@ def make_ODE(n_traj, r_space, min_sep, agg):
                 self.add_subsystem(name='agg', 
                                    subsys=ConstraintAggregator(
                                                              c_shape=(n_pairs, nn), 
-                                                             rho=50.0,
+                                                             rho=100.0,
                                                              aggregator='KS'))
                 self.connect('pairwise.dist', 'agg.g')
 

@@ -8,12 +8,15 @@ from crossing import intersect
 import os
 import time
 import pickle
-
+from snopt_parse import parse_SNOPT_MI
 
 np.random.seed(3)
 
 def make_benchmark(n_traj):
     opt_time, deriv_time = [], []
+    major_it = []
+    opt_success = []
+    col_time = []
     n_pairs = n_traj * (n_traj - 1) // 2
     r_space = 100.0
     min_sep = 5.0
@@ -47,6 +50,7 @@ def make_benchmark(n_traj):
             print("ignoring pair:", (i,j))
 
     for agg in [False, True]:
+        print("Running n=", n_traj, "agg:", agg)
         PlaneODE2D = make_ODE(n_traj, r_space, min_sep, agg)
 
         p = Problem(model=Group())
@@ -117,6 +121,7 @@ def make_benchmark(n_traj):
         else:
             p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
                                       upper=0.0, scaler=1e-3)
+        print("starting setup()")
         p.setup()
 
 
@@ -134,17 +139,26 @@ def make_benchmark(n_traj):
             p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y], 
                                                             nodes='state_input')
 
+        print("starting run_driver()")
         t = time.time()
         p.run_driver()
-        opt_time.append(time.time() - t)
-        n_computes = 25
+        ct = p.driver.coloring_elapsed
+        col_time.append(ct)
+
+        ot = time.time() - t - ct
+        opt_time.append(ot)
+        opt_success.append(p.driver.fail)
+        n_computes = 5
 
         t = time.time()
         for i in range(n_computes):
             p.compute_totals()
         deriv_time.append((time.time() - t)/n_computes)
 
-    return opt_time, deriv_time
+        mi = parse_SNOPT_MI()
+        major_it.append(mi)
+
+    return col_time, opt_time, deriv_time, opt_success, major_it
 
 
 

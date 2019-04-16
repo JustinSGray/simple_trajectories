@@ -38,17 +38,18 @@ class ConstraintAggregator(ExplicitComponent):
         k, dk = self.aggf(scale*g.flatten(), rho)
         #print("c:", k.min(), k.max(), k.sum())
 
-        outputs['c'] = np.sum(scale*k)
+        outputs['c'] = np.sum(scale*k)/k.size
+        self.deriv_scale = k.size
         self.dk = dk.reshape(shape)
 
     def compute_partials(self, inputs, partials):
-        partials['c', 'g'] = self.dk
+        partials['c', 'g'] = self.dk/self.deriv_scale
 
 
 if __name__ == '__main__':
     from openmdao.api import Problem, Group
     np.random.seed(1)
-    shape = (5,5)
+    shape = (50,50)
     m = 0.0
 
     p = Problem()
@@ -57,7 +58,7 @@ if __name__ == '__main__':
                                           reversed=True,
                                           rho=2.0,
                                           c_shape=shape,
-                                          aggregator='RePU'), promotes=['*'])
+                                          aggregator='KS'), promotes=['*'])
     p.setup()
     g = np.random.uniform(-1, 1, shape)
     p['g'] = g
@@ -66,4 +67,4 @@ if __name__ == '__main__':
 
     print(p['c'])
 
-    p.check_partials(compact_print=False)
+    p.check_partials(compact_print=True)
