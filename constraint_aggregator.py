@@ -56,7 +56,7 @@ if __name__ == '__main__':
     p.model = Group()
     p.model.add_subsystem('test', ConstraintAggregator(
                                           reversed=True,
-                                          rho=2.0,
+                                          rho=100.0,
                                           c_shape=shape,
                                           aggregator='KS'), promotes=['*'])
     p.setup()

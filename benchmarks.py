@@ -1,7 +1,7 @@
 import numpy as np
 
 from airspace_phase import make_ODE
-from openmdao.api import Problem, Group, pyOptSparseDriver, DirectSolver
+from openmdao.api import Problem, Group, pyOptSparseDriver, DirectSolver, ScipyKrylov
 from dymos import Phase, GaussLobatto
 from itertools import combinations
 from crossing import intersect
@@ -77,6 +77,7 @@ def make_benchmark(n_traj):
 
         p.model.add_subsystem('phase0', phase)
         p.model.linear_solver = DirectSolver()
+        #p.model.linear_solver = ScipyKrylov(atol=1e-4)
 
 
         max_time = 500.0
