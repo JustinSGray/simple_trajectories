@@ -49,7 +49,7 @@ class ConstraintAggregator(ExplicitComponent):
 if __name__ == '__main__':
     from openmdao.api import Problem, Group
     np.random.seed(1)
-    shape = (50,50)
+    shape = (50, 50)
     m = 0.0
 
     p = Problem()

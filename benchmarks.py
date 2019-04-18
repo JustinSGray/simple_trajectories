@@ -8,14 +8,14 @@ from crossing import intersect
 import os
 import time
 import pickle
-from snopt_parse import parse_SNOPT_MI
+from snopt_parse import parse_SNOPT_MI, parse_SNOPT_NCON
 
 np.random.seed(3)
 
 def make_benchmark(n_traj):
     opt_time, deriv_time = [], []
     major_it = []
-    opt_success = []
+    n_constr = []
     col_time = []
     n_pairs = n_traj * (n_traj - 1) // 2
     r_space = 100.0
@@ -59,13 +59,13 @@ def make_benchmark(n_traj):
         p.driver.options['optimizer'] = 'SNOPT'
         p.driver.options['dynamic_total_coloring'] = True
         #p.driver.set_simul_deriv_color('coloring.json')
-        #p.driver.opt_settings['Start'] = 'Cold'
+        p.driver.opt_settings['Start'] = 'Cold'
         p.driver.opt_settings["Major step limit"] = 2.0 #2.0
         p.driver.opt_settings['Major iterations limit'] = 1000000
         p.driver.opt_settings['Minor iterations limit'] = 1000000
         p.driver.opt_settings['Iterations limit'] = 1000000
-        p.driver.opt_settings['Major feasibility tolerance'] = 1.0E-6
-        p.driver.opt_settings['Major optimality tolerance'] = 4.0E-3
+        p.driver.opt_settings['Major feasibility tolerance'] = 1.5E-3
+        p.driver.opt_settings['Major optimality tolerance'] = 1.0E-2
         p.driver.opt_settings['iSumm'] = 6
 
         if agg:
@@ -76,11 +76,12 @@ def make_benchmark(n_traj):
                       ode_init_kwargs={'ignored_pairs' : ignored_pairs})
 
         p.model.add_subsystem('phase0', phase)
-        p.model.linear_solver = DirectSolver()
+        if not agg:
+            p.model.linear_solver = DirectSolver()
         #p.model.linear_solver = ScipyKrylov(atol=1e-4)
 
 
-        max_time = 500.0
+        max_time = 1500.0
         start_mass = 25.0
 
         phase.set_time_options(initial_bounds=(0, 0), duration_bounds=(10, max_time))
@@ -106,7 +107,7 @@ def make_benchmark(n_traj):
             #                   opt=True, upper=20, lower=0.0, scaler=1.0)
 
             phase.add_polynomial_control('speed%d' % i, order=2, units='m/s', opt=True,
-                                     targets=['p%d.speed' % i], upper=20, lower=0.0, 
+                                     targets=['p%d.speed' % i], upper=40, lower=0.001, 
                                      scaler=1.0)
 
             phase.add_design_parameter('heading%d' % i, opt=False, val=heading, 
@@ -143,12 +144,18 @@ def make_benchmark(n_traj):
         print("starting run_driver()")
         t = time.time()
         p.run_driver()
-        ct = p.driver._total_coloring._coloring_time
+        ct = p.driver._total_coloring._coloring_time + p.driver._total_coloring._sparsity_time
         col_time.append(ct)
 
         ot = time.time() - t - ct
         opt_time.append(ot)
-        opt_success.append(p.driver.fail)
+
+        nc0 = p.driver._cons
+        nc0 = sum([nc0[k]['size'] for k in nc0])
+        nc = parse_SNOPT_NCON()
+
+        print(nc0, nc)
+        n_constr.append(nc)
         n_computes = 5
 
         t = time.time()
@@ -159,7 +166,7 @@ def make_benchmark(n_traj):
         mi = parse_SNOPT_MI()
         major_it.append(mi)
 
-    return col_time, opt_time, deriv_time, opt_success, major_it
+    return col_time, opt_time, deriv_time, n_constr, major_it
 
 
 if __name__ == '__main__':
