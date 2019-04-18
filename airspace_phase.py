@@ -1,7 +1,7 @@
 import numpy as np
 
 from openmdao.api import ExplicitComponent, Group, DirectSolver
-from constraint_aggregator import ConstraintAggregator
+from constraint_aggregator import ConstraintAggregatorCol
 from plane import PlanePath2D
 from dymos import ODEOptions
 from space import Space
@@ -75,9 +75,10 @@ def make_ODE(n_traj, r_space, min_sep, agg):
             if agg:
                 n_pairs = n_traj * (n_traj - 1) // 2
                 self.add_subsystem(name='agg', 
-                                   subsys=ConstraintAggregator(
+                                   subsys=ConstraintAggregatorCol(
                                                              c_shape=(n_pairs, nn), 
                                                              rho=50.0,
+                                                             nn = nn,
                                                              aggregator='KS'))
                 self.connect('pairwise.dist', 'agg.g')
 

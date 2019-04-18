@@ -8,7 +8,7 @@ from crossing import intersect
 import os
 import time
 import pickle
-from snopt_parse import parse_SNOPT_MI, parse_SNOPT_NCON
+from snopt_parse import parse_SNOPT_MI
 
 np.random.seed(3)
 
@@ -64,7 +64,7 @@ def make_benchmark(n_traj):
         p.driver.opt_settings['Major iterations limit'] = 1000000
         p.driver.opt_settings['Minor iterations limit'] = 1000000
         p.driver.opt_settings['Iterations limit'] = 1000000
-        p.driver.opt_settings['Major feasibility tolerance'] = 1.5E-3
+        p.driver.opt_settings['Major feasibility tolerance'] = 1.5E-4
         p.driver.opt_settings['Major optimality tolerance'] = 1.0E-2
         p.driver.opt_settings['iSumm'] = 6
 
@@ -119,7 +119,7 @@ def make_benchmark(n_traj):
 
         if agg:
             p.model.add_constraint('phase0.rhs_disc.agg.c', 
-                                      upper=0.0, scaler=1.0)
+                                      upper=0.0, scaler=1e-3)
         else:
             p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
                                       upper=0.0, scaler=1e-3)
@@ -150,14 +150,12 @@ def make_benchmark(n_traj):
         ot = time.time() - t - ct
         opt_time.append(ot)
 
-        nc0 = p.driver._cons
-        nc0 = sum([nc0[k]['size'] for k in nc0])
-        nc = parse_SNOPT_NCON()
+        nc = p.driver._cons
+        nc = sum([nc[k]['size'] for k in nc])
 
-        print(nc0, nc)
         n_constr.append(nc)
-        n_computes = 5
 
+        n_computes = 10
         t = time.time()
         for i in range(n_computes):
             p.compute_totals()
