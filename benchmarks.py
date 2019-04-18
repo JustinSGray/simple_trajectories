@@ -17,6 +17,7 @@ def make_benchmark(n_traj):
     major_it = []
     n_constr = []
     col_time = []
+    color_counts = []
     n_pairs = n_traj * (n_traj - 1) // 2
     r_space = 100.0
     min_sep = 5.0
@@ -72,7 +73,7 @@ def make_benchmark(n_traj):
             ignored_pairs = []
 
         phase = Phase(transcription=GaussLobatto(num_segments=25, order=3),
-                      ode_class=PlaneODE2D, 
+                      ode_class=PlaneODE2D,
                       ode_init_kwargs={'ignored_pairs' : ignored_pairs})
 
         p.model.add_subsystem('phase0', phase)
@@ -92,25 +93,25 @@ def make_benchmark(n_traj):
             theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
             phase.set_state_options('p%dx' % i,
-                                    scaler=0.1, defect_scaler=0.01, fix_initial=True, 
+                                    scaler=0.1, defect_scaler=0.01, fix_initial=True,
                                     fix_final=False, units='m')
             phase.set_state_options('p%dy' % i,
-                                    scaler=0.1, defect_scaler=0.01, fix_initial=True, 
+                                    scaler=0.1, defect_scaler=0.01, fix_initial=True,
                                     fix_final=False, units='m')
 
-            phase.add_boundary_constraint('space%d.err_space_dist' % i, 
-                                          constraint_name='space%d_err_space_dist' % i, 
+            phase.add_boundary_constraint('space%d.err_space_dist' % i,
+                                          constraint_name='space%d_err_space_dist' % i,
                                           loc='final', lower=0.0)
 
 
-            # phase.add_control('speed%d' % i, rate_continuity=False, units='m/s', 
+            # phase.add_control('speed%d' % i, rate_continuity=False, units='m/s',
             #                   opt=True, upper=20, lower=0.0, scaler=1.0)
 
             phase.add_polynomial_control('speed%d' % i, order=2, units='m/s', opt=True,
-                                     targets=['p%d.speed' % i], upper=40, lower=0.001, 
+                                     targets=['p%d.speed' % i], upper=40, lower=0.001,
                                      scaler=1.0)
 
-            phase.add_design_parameter('heading%d' % i, opt=False, val=heading, 
+            phase.add_design_parameter('heading%d' % i, opt=False, val=heading,
                                        units='rad')
 
 
@@ -118,10 +119,10 @@ def make_benchmark(n_traj):
         #phase.add_objective('t_imp.', loc='final', scaler=1.0)
 
         if agg:
-            p.model.add_constraint('phase0.rhs_disc.agg.c', 
+            p.model.add_constraint('phase0.rhs_disc.agg.c',
                                       upper=0.0, scaler=1e-3)
         else:
-            p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
+            p.model.add_constraint('phase0.rhs_disc.pairwise.dist',
                                       upper=0.0, scaler=1e-3)
         print("starting setup()")
         p.setup()
@@ -136,9 +137,9 @@ def make_benchmark(n_traj):
         for i in range(n_traj):
             theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
-            p['phase0.states:p%dx' % i] = phase.interpolate(ys=[start_x, end_x], 
+            p['phase0.states:p%dx' % i] = phase.interpolate(ys=[start_x, end_x],
                                                             nodes='state_input')
-            p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y], 
+            p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y],
                                                             nodes='state_input')
 
         print("starting run_driver()")
@@ -147,6 +148,8 @@ def make_benchmark(n_traj):
         ct = p.driver._total_coloring._coloring_time + p.driver._total_coloring._sparsity_time
         col_time.append(ct)
 
+
+
         ot = time.time() - t - ct
         opt_time.append(ot)
 
@@ -154,6 +157,12 @@ def make_benchmark(n_traj):
         nc = sum([nc[k]['size'] for k in nc])
 
         n_constr.append(nc)
+
+        varname = 'phase0.rhs_disc.sub.pairwise.dist'
+        if agg:
+            varname = 'phase0.rhs_disc.agg.c'
+        col_fwd, col_rv = p.driver._total_coloring.get_row_var_coloring(varname)
+        color_counts.append([col_fwd, col_rv])
 
         n_computes = 10
         t = time.time()
@@ -164,11 +173,11 @@ def make_benchmark(n_traj):
         mi = parse_SNOPT_MI()
         major_it.append(mi)
 
-    return col_time, opt_time, deriv_time, n_constr, major_it
+    return col_time, opt_time, deriv_time, n_constr, major_it, color_counts
 
 
 if __name__ == '__main__':
-    
+
     n = 20
     make_benchmark(n)
 
