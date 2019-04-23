@@ -6,16 +6,21 @@ try:
 except:
     pass
 with open("bench.txt", 'a') as f:
-    f.write("n_traj, agg, coloring_time, opt_time, compute_total_time, major_iters, n_constr, n_col_fwd, n_col_rev\n")
+    f.write("agg, sparsity_time, coloring_time, opt_time, deriv_time, jac_shape, jac_fwd_color, jac_rev_color, sep_const_size, sep_fwd_color, sep_rev_color \n")
 
-for n_traj in [5, 10, 20, 40, 80, 100, 200]:
+cases = [5, 10, 20, 40, 80, 100, 200]
+cases = [80]
 
-    col_time, opt_time, deriv_time, n_constr, mi, color_counts = make_benchmark(n_traj)
+for n_traj in cases:
+
+    sparsity_times, col_times, opt_time, deriv_time, n_constr, jac_shape, jac_fwd_color, jac_rev_color, sep_cont_sizes, color_counts = make_benchmark(n_traj)
 
     with open("bench.txt", 'a') as f:
-        f.write("%d, %d, %f, %f, %f, %d, %d, %d, %d\n" % (n_traj, 0, col_time[0], opt_time[0], deriv_time[0], mi[0], n_constr[0], color_counts[0][0], color_counts[0][1]))
-        f.write("%d, %d, %f, %f, %f, %d, %d, %d, %d\n" % (n_traj, 1, col_time[1], opt_time[1], deriv_time[1], mi[1], n_constr[1], color_counts[1][0], color_counts[1][1]))
+        # print(sparsity_times, col_times, opt_time, deriv_time, n_constr, jac_shape, jac_fwd_color, jac_rev_color, sep_cont_sizes, color_counts, file=f)
 
-
+        for i in range(2): 
+            line = f'{i}, {sparsity_times[i]}, {col_times[i]}, {opt_time[i]}, {deriv_time[i]}, {jac_shape[i]}, {jac_fwd_color[i]}, {jac_rev_color[i]}, {sep_cont_sizes[i]}, {color_counts[i][0]}, {color_counts[i][1]} \n'
+            f.write(line)
+        
 
 

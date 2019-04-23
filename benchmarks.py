@@ -8,7 +8,7 @@ from crossing import intersect
 import os
 import time
 import pickle
-from snopt_parse import parse_SNOPT_MI
+# from snopt_parse import parse_SNOPT_MI
 
 np.random.seed(3)
 
@@ -16,8 +16,14 @@ def make_benchmark(n_traj):
     opt_time, deriv_time = [], []
     major_it = []
     n_constr = []
-    col_time = []
+    col_times = []
+    sparsity_times = []
     color_counts = []
+    jac_shapes = []
+    jac_fwd_colors = []
+    jac_rev_colors = []
+    sep_cont_sizes = []
+
     n_pairs = n_traj * (n_traj - 1) // 2
     r_space = 100.0
     min_sep = 5.0
@@ -50,7 +56,7 @@ def make_benchmark(n_traj):
             ignored_pairs.append((i, j))
             print("ignoring pair:", (i,j))
 
-    for agg in [False, True]:
+    for agg in [False,]:
         print("Running n=", n_traj, "agg:", agg)
         PlaneODE2D = make_ODE(n_traj, r_space, min_sep, agg)
 
@@ -145,8 +151,10 @@ def make_benchmark(n_traj):
         print("starting run_driver()")
         t = time.time()
         p.run_driver()
-        ct = p.driver._total_coloring._coloring_time + p.driver._total_coloring._sparsity_time
-        col_time.append(ct)
+        ct = p.driver._total_coloring._coloring_time
+        st = p.driver._total_coloring._sparsity_time
+        col_times.append(ct)
+        sparsity_times.append(st)
 
 
 
@@ -154,15 +162,23 @@ def make_benchmark(n_traj):
         opt_time.append(ot)
 
         nc = p.driver._cons
-        nc = sum([nc[k]['size'] for k in nc])
+        sum_nc = sum([nc[k]['size'] for k in nc])
 
-        n_constr.append(nc)
+        n_constr.append(sum_nc)
 
-        varname = 'phase0.rhs_disc.sub.pairwise.dist'
         if agg:
             varname = 'phase0.rhs_disc.agg.c'
+        else: 
+            varname = 'phase0.rhs_disc.sub.pairwise.dist'
+
+        sep_cont_sizes.append(nc[varname]['size'])
+        
         col_fwd, col_rv = p.driver._total_coloring.get_row_var_coloring(varname)
         color_counts.append([col_fwd, col_rv])
+
+        jac_shapes.append(p.driver._total_coloring._shape)
+        jac_fwd_colors.append(p.driver._total_coloring.total_solves(do_fwd=True, do_rev=False))
+        jac_rev_colors.append(p.driver._total_coloring.total_solves(do_fwd=False, do_rev=True))
 
         n_computes = 10
         t = time.time()
@@ -170,10 +186,11 @@ def make_benchmark(n_traj):
             p.compute_totals()
         deriv_time.append((time.time() - t)/n_computes)
 
-        mi = parse_SNOPT_MI()
+        # mi = parse_SNOPT_MI()
+        mi = -1
         major_it.append(mi)
 
-    return col_time, opt_time, deriv_time, n_constr, major_it, color_counts
+    return sparsity_times, col_times, opt_time, deriv_time, n_constr, jac_shapes, jac_fwd_colors, jac_rev_colors, sep_cont_sizes, color_counts
 
 
 if __name__ == '__main__':
