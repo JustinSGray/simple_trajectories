@@ -4,7 +4,6 @@ from matplotlib import cm
 from itertools import combinations
 import os, shutil
 import pickle
-from airspace_phase import PlaneODE2D, n_traj, r_space, min_sep
 
 scene = 'implicit'
 
@@ -17,6 +16,8 @@ os.makedirs('frames_%s' % scene)
 
 with open('sim_%s.pkl' % scene, 'rb') as f:
     data = pickle.load(f)
+
+n_traj, r_space, min_sep = data['n_traj'], data['r_space'], data['min_sep']
 
 
 n=len(data['t'])
@@ -45,7 +46,7 @@ for t in range(len(data['t']))[::-1]:
 
         #plt.plot(data[i]['x'][:t], data[i]['y'][:t], 'k', linewidth=0.1)
 
-        
+
         #plt.plot([start_x], [start_y], 's', markersize=6)
         #plt.xlabel('x')
         #plt.ylabel('y')

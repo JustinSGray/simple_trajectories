@@ -14,7 +14,7 @@ np.random.seed(30)
 # seed = 30, nn = 20, segments = 25
 #       drop i = 13
 
-n_traj = 20
+n_traj = 5
 n_pairs = n_traj * (n_traj - 1) // 2
 r_space = 100.0
 min_sep = 5.0
@@ -72,7 +72,7 @@ if not coloring:
     ignored_pairs = []
 
 phase = Phase(transcription=GaussLobatto(num_segments=25, order=3),
-              ode_class=PlaneODE2D, 
+              ode_class=PlaneODE2D,
               ode_init_kwargs={'ignored_pairs' : ignored_pairs})
 
 p.model.add_subsystem('phase0', phase)
@@ -90,25 +90,25 @@ for i in range(n_traj):
     theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
     phase.set_state_options('p%dx' % i,
-                            scaler=0.1, defect_scaler=0.01, fix_initial=True, 
+                            scaler=0.1, defect_scaler=0.01, fix_initial=True,
                             fix_final=False, units='m')
     phase.set_state_options('p%dy' % i,
-                            scaler=0.1, defect_scaler=0.01, fix_initial=True, 
+                            scaler=0.1, defect_scaler=0.01, fix_initial=True,
                             fix_final=False, units='m')
 
-    phase.add_boundary_constraint('space%d.err_space_dist' % i, 
-                                  constraint_name='space%d_err_space_dist' % i, 
+    phase.add_boundary_constraint('space%d.err_space_dist' % i,
+                                  constraint_name='space%d_err_space_dist' % i,
                                   loc='final', lower=0.0)
 
 
-    # phase.add_control('speed%d' % i, rate_continuity=False, units='m/s', 
+    # phase.add_control('speed%d' % i, rate_continuity=False, units='m/s',
     #                   opt=True, upper=20, lower=0.0, scaler=1.0)
 
     phase.add_polynomial_control('speed%d' % i, order=2, units='m/s', opt=True,
-                             targets=['p%d.speed' % i], upper=20, lower=0.0, 
+                             targets=['p%d.speed' % i], upper=20, lower=0.0,
                              scaler=1.0)
 
-    phase.add_design_parameter('heading%d' % i, opt=False, val=heading, 
+    phase.add_design_parameter('heading%d' % i, opt=False, val=heading,
                                units='rad')
 
 
@@ -116,10 +116,10 @@ phase.add_objective('time', loc='final', scaler=1.0)
 #phase.add_objective('t_imp.', loc='final', scaler=1.0)
 
 if agg:
-    p.model.add_constraint('phase0.rhs_disc.agg.c', 
+    p.model.add_constraint('phase0.rhs_disc.agg.c',
                               upper=0.0, scaler=1.0)
 else:
-    p.model.add_constraint('phase0.rhs_disc.pairwise.dist', 
+    p.model.add_constraint('phase0.rhs_disc.pairwise.dist',
                               upper=0.0, scaler=1e-3)
 p.setup()
 
@@ -133,9 +133,9 @@ p['phase0.t_duration'] = max_time/2.0
 for i in range(n_traj):
     theta, heading, start_x, start_y, end_x, end_y = locs[i]
 
-    p['phase0.states:p%dx' % i] = phase.interpolate(ys=[start_x, end_x], 
+    p['phase0.states:p%dx' % i] = phase.interpolate(ys=[start_x, end_x],
                                                     nodes='state_input')
-    p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y], 
+    p['phase0.states:p%dy' % i] = phase.interpolate(ys=[start_y, end_y],
                                                     nodes='state_input')
 
     #p['phase0.states:p%dmass' % i] = phase.interpolate(ys=[start_mass, start_mass], nodes='state_input')
@@ -162,7 +162,8 @@ plt.gca().add_artist(circle)
 
 t = exp_out.get_val('phase0.timeseries.time')
 print("total time:", t[-1])
-data = {'t' : t}
+data = {'t' : t, 'min_sep' : min_sep, 'n_traj' : n_traj, 'n_pairs' : n_pairs,
+        'r_space' : r_space}
 for i in range(n_traj):
     x = exp_out.get_val('phase0.timeseries.states:p%dx' % i)
     y = exp_out.get_val('phase0.timeseries.states:p%dy' % i)
@@ -177,7 +178,7 @@ for i in range(n_traj):
 
 
     for k in data.keys():
-        if k == 't':
+        if k in ['t', 'min_sep', 'n_traj', 'n_pairs', 'r_space']:
             continue
         x2, y2 = data[k]['x'], data[k]['y']
         dist = np.sqrt((x - x2)**2 + (y - y2)**2)
@@ -189,7 +190,7 @@ for i in range(n_traj):
         if dist.min() < min_sep:
             print("!! dist impl. check", i, k, dist.min())
 
-    data[i] = {'x' : x, 'y' : y, 
+    data[i] = {'x' : x, 'y' : y,
                'heading' : heading, 'loc' : locs[i]}
     theta, heading_, start_x, start_y, end_x, end_y = locs[i]
     idx = np.where(x**2 + y**2 <= r_space**2)
